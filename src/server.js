@@ -1,27 +1,43 @@
+/* eslint-disable no-console */
 import express from 'express'
-import { mapOrder } from '~/utils/sorts.js'
+import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
+import exitHook from 'async-exit-hook'
+import { env } from '~/config/environment'
 
-const app = express()
-const port = 3000
-const localhost = 'localhost'
+const START_SERVER = () => {
+  const app = express()
 
-app.get('/', (req, res) => {
-  console.log(
-    mapOrder(
-      [
-        { id: 'id-1', name: 'One' },
-        { id: 'id-2', name: 'Two' },
-        { id: 'id-3', name: 'Three' },
-        { id: 'id-4', name: 'Four' },
-        { id: 'id-5', name: 'Five' }
-      ],
-      ['id-5', 'id-4', 'id-2', 'id-3', 'id-1'],
-      'id'
-    )
-  )
-  return res.send('Hello World!')
-})
+  app.get('/', async (req, res) => {
+    console.log(env.APP_HOST)
 
-app.listen(port, localhost, () => {
-  console.log(`Server is running at http://${localhost}:${port}`)
-})
+    return res.send('Hello World!')
+  })
+
+  app.listen(env.APP_PORT, env.APP_HOST, () => {
+    console.log(`Server is running at http://${env.APP_HOST}:${env.APP_PORT}`)
+  })
+
+  exitHook((callback) => {
+    console.log('Server is shutting down...')
+    CLOSE_DB().then( () => {
+      console.log('MongoDB connection closed')
+      callback()
+    }).catch( (error) => {
+      console.error('Error during MongoDB disconnection', error)
+      callback()
+    }) })
+}
+
+//IIFE
+(async () => {
+  try {
+    await CONNECT_DB()
+    console.log('Connected to MongoDB')
+
+    START_SERVER()
+  } catch (error) {
+    console.error('Failed to connect to MongoDB', error)
+    process.exit(0)
+  }
+})()
+
