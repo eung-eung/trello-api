@@ -4,6 +4,7 @@ import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
 import exitHook from 'async-exit-hook'
 import { env } from '~/config/environment'
 import { APIs_V1 } from '~/routes/v1/index.js'
+import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
 
 const START_SERVER = () => {
   const app = express()
@@ -14,9 +15,13 @@ const START_SERVER = () => {
   //use APIs v1
   app.use('/v1', APIs_V1)
 
+  //middleware
+  app.use(errorHandlingMiddleware)
+
   app.listen(env.APP_PORT, env.APP_HOST, () => {
     console.log(`Server is running at http://${env.APP_HOST}:${env.APP_PORT}`)
   })
+
 
   exitHook((callback) => {
     console.log('Server is shutting down...')
