@@ -3,13 +3,13 @@ import { formatFromStringtoSlug } from '~/utils/formatters'
 import { boardModel } from '~/model/boardModel'
 
 const createNew = async (reqBody) => {
-  const createBoard = {
+  const createdBoard = {
     ...reqBody,
     slug: formatFromStringtoSlug(reqBody.title)
   }
 
-  const result = await boardModel.createNew(createBoard)
-  const getNewBoard = await boardModel.findOneById(result.insertedId)
+  const result = await boardModel.createNew(createdBoard)
+  const getNewBoard = await boardModel.findOneById(result.insertedId.toString())
 
   return getNewBoard
 }
