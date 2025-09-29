@@ -1,6 +1,8 @@
 
 import { formatFromStringtoSlug } from '~/utils/formatters'
 import { boardModel } from '~/model/boardModel'
+import ApiError from '~/utils/ApiError'
+import { StatusCodes } from 'http-status-codes'
 
 const createNew = async (reqBody) => {
   const createdBoard = {
@@ -9,11 +11,20 @@ const createNew = async (reqBody) => {
   }
 
   const result = await boardModel.createNew(createdBoard)
-  const getNewBoard = await boardModel.findOneById(result.insertedId.toString())
+  const newBoard = await boardModel.findOneById(result.insertedId.toString())
 
-  return getNewBoard
+  return newBoard
+}
+
+const getDetails = async (boardId) => {
+  const board = await boardModel.getDetails(boardId)
+  if (!board) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found')
+  }
+  return board
 }
 
 export const boardService = {
-  createNew
+  createNew,
+  getDetails
 }

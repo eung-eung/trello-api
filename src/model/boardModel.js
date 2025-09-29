@@ -2,6 +2,9 @@ import Joi from 'joi'
 import { GET_DB } from '~/config/mongodb'
 import { ObjectId } from 'mongodb'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import { BOARD_TYPES } from '~/utils/constants'
+import { columnModel } from '~/model/columnModel'
+import { cardModel } from '~/model/cardModel'
 
 //define Name & Schema
 const BOARD_COLLECTION_NAME = 'boards'
@@ -9,6 +12,7 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   title: Joi.string().min(3).max(50).required().trim().strict(),
   slug:Joi.string().min(3).max(50).required().trim().strict(),
   description: Joi.string().required().min(3).max(255).trim().strict(),
+  type: Joi.string().valid(...BOARD_TYPES).required(),
 
   columnOrderIds: Joi.array().items(
     Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
@@ -40,9 +44,64 @@ const findOneById = async (id) => {
   } catch (error) { throw new Error(error) }
 }
 
+//query tổng hợp (aggregate) để lấy toàn bộ Columns và Cards thuộc về Board
+const getDetails = async (boardId) => {
+  try {
+    // const board = await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
+    //   _id: new ObjectId(String(boardId))
+    // })
+
+    //aggregate join bảng Board -> Column, Board -> Card
+    const board = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
+      { $match: {
+        _id: new ObjectId(String(boardId)),
+        _destroy: false
+      } },
+      { $lookup: {
+        from: columnModel.COLUMN_COLLECTION_NAME,
+        localField: '_id',
+        foreignField: 'boardId',
+        as: 'columns'
+      } },
+      { $lookup: {
+        from: cardModel.CARD_COLLECTION_NAME,
+        localField: '_id',
+        foreignField: 'boardId',
+        as: 'cards'
+      } },
+      { $addFields: { //add/ghi đè field columns
+        columns: {
+          $map: {
+            input:'$columns', //field "columns" (field này đã lookup ở trên)
+            as: 'col', //đặt tên biến đại diện cho từng phần tử (một column)
+            in: { //định nghĩa object trả về cho mỗi column
+              $mergeObjects:[ //Gộp 2 object thành 1 (col + cards)
+                '$$col', //giá trị column hiện tại (object gốc)
+                {
+                  cards: {
+                    $filter: {
+                      input: '$cards', //đầu vào là cards đã lookup ở trên
+                      as:'card',
+                      cond: { $eq: ['$$card.columnId', '$$col._id'] } //lọc lấy những card có columnId === col._id
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      } },
+      { $project: { cards: 0 } } //xoá field Cards đã look up vì đã merge nó vào trong từng column
+    ]).toArray()
+
+    return board[0] || {}
+  } catch (error) { throw new Error(error) }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
   createNew,
-  findOneById
+  findOneById,
+  getDetails
 }
