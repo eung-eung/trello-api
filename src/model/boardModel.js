@@ -91,10 +91,10 @@ const getDetails = async (boardId) => {
           }
         }
       } },
-      { $project: { cards: 0 } } //xoá field Cards đã look up vì đã merge nó vào trong từng column
+      { $project: { cards: 0 } } //xoá field cards đã look up vì đã merge nó vào trong từng column
     ]).toArray()
 
-    return board[0] || {}
+    return board[0] || null
   } catch (error) { throw new Error(error) }
 }
 
