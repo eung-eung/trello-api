@@ -24,7 +24,16 @@ const getDetails = async (boardId) => {
   return board
 }
 
+const update = async (boardId, reqBody) => {
+  const updatedData = {
+    ...reqBody,
+    updatedAt: Date.now(),
+  }
+  const updatedBoard = await boardModel.update(boardId, updatedData)
+  return updatedBoard
+}
 export const boardService = {
   createNew,
-  getDetails
+  getDetails,
+  update
 }
