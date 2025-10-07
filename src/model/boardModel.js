@@ -98,10 +98,23 @@ const getDetails = async (boardId) => {
   } catch (error) { throw new Error(error) }
 }
 
+//push columnId vào cuối mảng columnOrderIds trong board
+const pushToColumnOrderIds = async (column) => {
+  try {
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(String(column.boardId)) },
+      { $push: { columnOrderIds: new ObjectId(String(column._id)) } },
+      { returnDocument: 'after', includeResultMetadata: false }
+    )
+    // (MongoDB Node.js driver ≥ v6) => includeResultMetadata: false để không cần result.value
+    return result
+  } catch (error) { throw new Error(error) }
+}
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
-  getDetails
+  getDetails,
+  pushToColumnOrderIds
 }
