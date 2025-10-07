@@ -23,6 +23,9 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   _destroy: Joi.boolean().default(false)
 })
 
+//chỉ định ra những fields mà mình không muốn cập nhật
+const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
+
 const validateBeforeCreate = async (data) => {
   return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly:false })
 }
@@ -110,11 +113,57 @@ const pushToColumnOrderIds = async (column) => {
     return result
   } catch (error) { throw new Error(error) }
 }
+
+const update = async (boardId, updateData) => {
+  try {
+    //lọc những field mà chúng ta không cho phép update
+    Object.keys(updateData).forEach(fieldName => {
+      if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
+        delete updateData[fieldName]
+      }
+    })
+
+    //xử lí thêm validation nếu request có field columnOrderIds
+    if (updateData.columnOrderIds) {
+      const columnOrderIdsFromClient = updateData.columnOrderIds
+      const board = await findOneById(boardId)
+
+      if (!board) throw new Error('Board not found')
+
+      const validColumnOrderIds = board.columnOrderIds
+
+      //check duplicate
+      if (columnOrderIdsFromClient.length !== new Set(columnOrderIdsFromClient).size) {
+        throw new Error('Duplicate column id in request!')
+      }
+
+      //kiểm tra số lượng id trong mảng
+      if (validColumnOrderIds.length !== columnOrderIdsFromClient.length) {
+        throw new Error('Mismatched columnOrderIds!!')
+      }
+
+      //check valid orderColumnIds từ request có giống với trong data hiện tại không
+      const allValid = columnOrderIdsFromClient.every(id => validColumnOrderIds.includes(id))
+      if (!allValid) {
+        throw new Error('Invalid column id in columnOrderIds!')
+      }
+    }
+
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(String(boardId)) },
+      { $set: updateData },
+      { returnDocument:'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
   getDetails,
-  pushToColumnOrderIds
+  pushToColumnOrderIds,
+  update
 }
