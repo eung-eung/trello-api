@@ -8,6 +8,15 @@ const createNew = async ( req, res, next ) => {
   } catch (error) { next(error) }
 }
 
+const update = async ( req, res, next ) => {
+  const columnId = req.params.columnId
+  try {
+    const updatedColumn = await columnService.update(columnId, req.body)
+    res.status(StatusCodes.OK).json(updatedColumn)
+  } catch (error) { next(error) }
+}
+
 export const columnController = {
-  createNew
+  createNew,
+  update
 }

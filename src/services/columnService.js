@@ -15,6 +15,13 @@ const createNew = async (body) => {
   } catch (error) { throw new Error(error) }
 }
 
+const update = async (columndId, reqBody) => {
+  try {
+    const result = await columnModel.updateCardOrderIds(columndId, reqBody)
+    return result
+  } catch (error) { throw new Error(error) }
+}
 export const columnService = {
-  createNew
+  createNew,
+  update
 }
