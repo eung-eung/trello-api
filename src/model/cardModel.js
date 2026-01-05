@@ -18,6 +18,8 @@ const CARD_COLLECTION_SCHEMA = Joi.object({
   _destroy: Joi.boolean().default(false)
 })
 
+const INVALID_UPDATE_FIELDS = ['_id', 'createdAt', 'boardId']
+
 const validationBeforeCreate = async (data) => {
   const validCard = await CARD_COLLECTION_SCHEMA.validateAsync(data)
   const validBoardId = await boardModel.findOneById(validCard.boardId)
