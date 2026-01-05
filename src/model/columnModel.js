@@ -68,7 +68,7 @@ const pushToCardOrderIds = async (card) => {
   } catch (error) { throw new Error(error) }
 }
 
-const updateCardOrderIds = async (columnId, updatedData) => {
+const update = async (columnId, updatedData) => {
   try {
     Object.keys(updatedData).forEach(key => {
       if (INVALID_UPDATE_FIELDS.includes(key)) {
@@ -94,15 +94,15 @@ const updateCardOrderIds = async (columnId, updatedData) => {
       if (validCardOrderIds.length !== cardOrderIdsFromClient.length) {
         throw new Error('Mismatched cardOrderIds!!')
       }
-
-      const result = await GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
-        { _id: new ObjectId(String(columnId)) },
-        { $set: updatedData },
-        { returnDocument:'after' }
-      )
-      return result
-
     }
+
+    updatedData.cardOrderIds = updatedData.cardOrderIds.map(id => new ObjectId(String(id)))
+    const result = await GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(String(columnId)) },
+      { $set: updatedData },
+      { returnDocument:'after' }
+    )
+    return result
   } catch (error) { throw new Error(error) }
 }
 export const columnModel = {
@@ -111,5 +111,5 @@ export const columnModel = {
   createNew,
   findOneById,
   pushToCardOrderIds,
-  updateCardOrderIds
+  update
 }
