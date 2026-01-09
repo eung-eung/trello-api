@@ -83,20 +83,14 @@ const update = async (columnId, updatedData) => {
 
       if (!column) throw new Error('Column not found')
 
-      const validCardOrderIds = column.cardOrderIds
-
       //check duplicate
       if (cardOrderIdsFromClient.length !== new Set(cardOrderIdsFromClient).size) {
         throw new Error('Duplicate card id in request!')
       }
-
-      //kiểm tra số lượng id trong mảng
-      if (validCardOrderIds.length !== cardOrderIdsFromClient.length) {
-        throw new Error('Mismatched cardOrderIds!!')
-      }
     }
 
     updatedData.cardOrderIds = updatedData.cardOrderIds.map(id => new ObjectId(String(id)))
+
     const result = await GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
       { _id: new ObjectId(String(columnId)) },
       { $set: updatedData },
