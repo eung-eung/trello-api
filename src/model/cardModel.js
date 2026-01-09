@@ -37,7 +37,6 @@ const validationBeforeCreate = async (data) => {
   return validCard
 }
 
-
 const createNew = async (data) => {
   try {
     const validData = await validationBeforeCreate(data)
@@ -60,27 +59,30 @@ const findOneById = async (cardId) => {
   } catch (error) { throw new Error(error) }
 }
 
-const updateColumnIdInCard = async (cardId, newColumnId) => {
+const update = async (cardId, updatedData) => {
   try {
-    //kiểm tra cardId và newColumnId có tồn tại không
-    const validCard = await findOneById(cardId)
-    const validColumn = await columnModel.findOneById(newColumnId)
-    if (!validCard || !validColumn) {
-      throw new Error(!validCard ? 'Card does not exist!' : 'Column does not exist!')
-    }
+    Object.keys(updatedData).forEach(key => {
+      if (INVALID_UPDATE_FIELDS.includes(key)) {
+        delete updatedData[key]
+      }}
+    )
+
+    //format dữ liệu có liên quan tới ObjectId
+    if (updatedData.columnId) updatedData.columnId = new ObjectId(String(updatedData.columnId))
 
     const card = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
       { _id: new ObjectId(String(cardId)) },
-      { $set: { columnId: new ObjectId(String(newColumnId)) } },
+      { $set: updatedData },
       { returnDocument: 'after' }
     )
     return card
   } catch (error) { throw new Error(error) }
 }
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
-  updateColumnIdInCard
+  update
 }
