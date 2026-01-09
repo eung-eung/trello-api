@@ -144,8 +144,8 @@ const update = async (boardId, updateData) => {
       }
 
       //check valid orderColumnIds từ request có giống với trong data hiện tại không
-      const allValid = columnOrderIdsFromClient.every(id => validColumnOrderIds.includes(id))
-      if (!allValid) {
+      const isValidColumnOrder = columnOrderIdsFromClient.every(clientId => validColumnOrderIds.some(validId => validId.equals(clientId)))
+      if (!isValidColumnOrder ) {
         throw new Error('Invalid column id in columnOrderIds!')
       }
     }
