@@ -17,7 +17,7 @@ const createNew = async (body) => {
 
 const update = async (columndId, reqBody) => {
   try {
-    const result = await columnModel.updateCardOrderIds(columndId, reqBody)
+    const result = await columnModel.update(columndId, reqBody)
     return result
   } catch (error) { throw new Error(error) }
 }
