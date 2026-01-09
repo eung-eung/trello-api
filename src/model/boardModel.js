@@ -1,4 +1,4 @@
-import Joi from 'joi'
+import Joi, { valid } from 'joi'
 import { GET_DB } from '~/config/mongodb'
 import { ObjectId } from 'mongodb'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
@@ -124,13 +124,14 @@ const update = async (boardId, updateData) => {
     })
 
     //xử lí thêm validation nếu request có field columnOrderIds
+    updateData.columnOrderIds = updateData.columnOrderIds?.map(id => new ObjectId(String(id)))
     if (updateData.columnOrderIds) {
       const columnOrderIdsFromClient = updateData.columnOrderIds
       const board = await findOneById(boardId)
 
       if (!board) throw new Error('Board not found')
 
-      const validColumnOrderIds = board.columnOrderIds
+      const validColumnOrderIds = board.columnOrderIds.map(id => new ObjectId(String(id)))
 
       //check duplicate
       if (columnOrderIdsFromClient.length !== new Set(columnOrderIdsFromClient).size) {
@@ -143,8 +144,8 @@ const update = async (boardId, updateData) => {
       }
 
       //check valid orderColumnIds từ request có giống với trong data hiện tại không
-      const allValid = columnOrderIdsFromClient.every(id => validColumnOrderIds.includes(id))
-      if (!allValid) {
+      const isValidColumnOrder = columnOrderIdsFromClient.every(clientId => validColumnOrderIds.some(validId => validId.equals(clientId)))
+      if (!isValidColumnOrder ) {
         throw new Error('Invalid column id in columnOrderIds!')
       }
     }
