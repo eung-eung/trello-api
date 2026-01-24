@@ -3,7 +3,7 @@ import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 import { GET_DB } from '~/config/mongodb'
 import { ObjectId } from 'mongodb'
 import { boardModel } from './boardModel'
-
+import { cardModel } from '~/model/cardModel'
 
 const COLUMN_COLLECTION_NAME = 'columns'
 const COLUMN_COLLECTION_SCHEMA = Joi.object({
@@ -15,6 +15,7 @@ const COLUMN_COLLECTION_SCHEMA = Joi.object({
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
+  deletedAt: Joi.date().timestamp('javascript').default(null),
   _destroy: Joi.boolean().default(false)
 })
 
@@ -99,11 +100,39 @@ const update = async (columnId, updatedData) => {
     return result
   } catch (error) { throw new Error(error) }
 }
+
+const deleteColumn = async (columnId) => {
+  try {
+    //kiểm tra column có tồn tại hay không
+    const validColumn = await findOneById(columnId)
+    if (!validColumn) throw new Error('Column not found')
+
+    //xóa column
+    await GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(String(columnId)) },
+      { $set: { _destroy: true },
+        $currentDate: { updatedAt: true, deletedAt: true }
+      },
+      { returnDocument:'after' }
+    )
+
+    //xóa tất cả các card thuộc column đó
+    await GET_DB().collection(cardModel.CARD_COLLECTION_NAME).updateMany(
+      { columnId: new ObjectId(String(columnId)) },
+      {
+        $set: { _destroy: true },
+        $currentDate: { updatedAt: true, deletedAt: true }
+      }
+    )
+  } catch (error) { throw new Error(error)}
+}
+
 export const columnModel = {
   COLUMN_COLLECTION_NAME,
   COLUMN_COLLECTION_SCHEMA,
   createNew,
   findOneById,
   pushToCardOrderIds,
-  update
+  update,
+  deleteColumn
 }

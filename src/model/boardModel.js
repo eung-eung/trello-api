@@ -1,4 +1,4 @@
-import Joi, { valid } from 'joi'
+import Joi from 'joi'
 import { GET_DB } from '~/config/mongodb'
 import { ObjectId } from 'mongodb'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
