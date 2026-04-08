@@ -1,4 +1,4 @@
-import Joi, { valid } from 'joi'
+import Joi from 'joi'
 import { GET_DB } from '~/config/mongodb'
 import { ObjectId } from 'mongodb'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
@@ -64,7 +64,14 @@ const getDetails = async (boardId) => {
         from: columnModel.COLUMN_COLLECTION_NAME,
         localField: '_id',
         foreignField: 'boardId',
-        as: 'columns'
+        as: 'columns',
+        pipeline: [
+          {
+            $match: {
+              _destroy: false
+            }
+          }
+        ]
       } },
       { $lookup: {
         from: cardModel.CARD_COLLECTION_NAME,
@@ -159,6 +166,18 @@ const update = async (boardId, updateData) => {
   } catch (error) { throw new Error(error) }
 }
 
+const removeColumnIdFromColumnOrderIds = async (boardId, columnId) => {
+  try {
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(String(boardId)) },
+      { $pull: { columnOrderIds: new ObjectId(String(columnId)) } }
+    )
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
@@ -166,5 +185,6 @@ export const boardModel = {
   findOneById,
   getDetails,
   pushToColumnOrderIds,
-  update
+  update,
+  removeColumnIdFromColumnOrderIds
 }
