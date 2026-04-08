@@ -117,13 +117,10 @@ const deleteColumn = async (columnId) => {
     )
 
     //xóa tất cả các card thuộc column đó
-    await GET_DB().collection(cardModel.CARD_COLLECTION_NAME).updateMany(
-      { columnId: new ObjectId(String(columnId)) },
-      {
-        $set: { _destroy: true },
-        $currentDate: { updatedAt: true, deletedAt: true }
-      }
-    )
+    await cardModel.deleteManyByColumnId(columnId)
+
+    //xóa colummnOrderIds trong board
+    await boardModel.removeColumnIdFromColumnOrderIds(validColumn.boardId, columnId)
   } catch (error) { throw new Error(error)}
 }
 
