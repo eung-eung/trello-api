@@ -113,8 +113,33 @@ const verifyAccount = async (reqBody) => {
   const updatedUser = await userModel.update(existingUser._id, updatedData)
   return pickUser(updatedUser)
 }
+
+const refreshToken = async (refreshToken) => {
+  try {
+    const refreshTokenDecoded = await JwtProvider.verifyToken(
+      refreshToken,
+      env.REFRESH_TOKEN_SECRET_SIGNATURE
+    )
+
+    const userInfo = {
+      _id: refreshTokenDecoded._id,
+      email: refreshTokenDecoded.email
+    }
+
+    //tạo access token mới, chỉ lưu thông tin unique + cố định từ user, đã có trong token rồi
+    //có thể lấy luôn từ decoded ra, tiết kiệm query vào DB để lấy data
+    const accessToken = await JwtProvider.generateToken(
+      userInfo,
+      env.ACCESS_TOKEN_SECRET_SIGNATURE,
+      env.ACCESS_TOKEN_LIFE
+    )
+    return { accessToken }
+
+  } catch (error) { throw new Error( error)}
+}
 export const userService = {
   register,
   login,
-  verifyAccount
+  verifyAccount,
+  refreshToken
 }
