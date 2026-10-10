@@ -9,6 +9,7 @@ import { renderTemplate } from '~/utils/renderTemplate'
 import { BrevoProvider } from '~/providers/BrevoProvider'
 import { env } from '../config/environment.js'
 import { JwtProvider } from '~/providers/JwtProvider.js'
+import { CloudinaryProvider } from '~/providers/CloudinaryProvider.js'
 
 const register = async (reqBody) => {
   // kiểm tra xem email đã tồn tại trong hệ thống hay chưa
@@ -84,6 +85,7 @@ const login = async (reqBody) => {
     userInfoForToken,
     env.REFRESH_TOKEN_SECRET_SIGNATURE,
     env.REFRESH_TOKEN_LIFE
+    // 15
   )
 
   //trả về client thông tin user và 2 token
@@ -132,14 +134,50 @@ const refreshToken = async (refreshToken) => {
       userInfo,
       env.ACCESS_TOKEN_SECRET_SIGNATURE,
       env.ACCESS_TOKEN_LIFE
+      // 5
     )
     return { accessToken }
 
-  } catch (error) { throw new Error( error)}
+  } catch (error) { throw new Error(error)}
+}
+
+const update = async (userId, reqBody, userAvatarFile) => {
+  //kiểm tra tài khoản trước khi update
+  const existUser = await userModel.findOneById(userId)
+  if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
+  if (!existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Account is not active')
+  let updatedUser = {}
+  //TH1: update password
+  if (reqBody.current_password && reqBody.new_password) {
+    //check current password có đúng hay không
+    if (!bcrypt.compareSync(reqBody.current_password, existUser.password)) {
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your current password is incorrect')
+    }
+
+    const hashedNewPassword = await bcrypt.hash(reqBody.new_password, 10)
+    updatedUser = await userModel.update(existUser._id, {
+      password: hashedNewPassword
+    })
+  } else if (userAvatarFile) {
+    const uploadResult = await CloudinaryProvider.streamUpload(userAvatarFile.buffer, `users/${existUser._id}/images/avatar`, { overwrite: true})
+    console.log('service > update > upload result: ', uploadResult)
+
+    //lưu url của file ảnh vào db
+    updatedUser = await userModel.update(existUser._id, {
+      avatar: uploadResult.secure_url
+    })
+  } else {
+    //TH2: update thông tin chung (display name)
+    updatedUser = await userModel.update(existUser._id, {
+      displayName: reqBody.displayName
+    })
+  }
+  return pickUser(updatedUser)
 }
 export const userService = {
   register,
   login,
   verifyAccount,
-  refreshToken
+  refreshToken,
+  update
 }

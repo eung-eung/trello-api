@@ -11,6 +11,7 @@ const isAuthorized = async (req, res, next) => {
     return
   }
   try {
+    console.log('middlware auth')
     //verify token
     const accessTokenDecoded = await JwtProvider.verifyToken(
       clientAccessToken,
@@ -18,7 +19,7 @@ const isAuthorized = async (req, res, next) => {
     )
     //hợp lệ => lưu thông tin giải mã vào req để các tầng sau có thể sử dụng
     req.jwtDecoded = accessTokenDecoded
-
+    console.log(accessTokenDecoded)
     //cho request đi tiếp
     next()
   } catch (error) {

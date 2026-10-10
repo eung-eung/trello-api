@@ -30,7 +30,7 @@ const login = async (req, res, next) => {
       sameSite: 'none',
       maxAge: ms('14 days')
     })
-    res.cookie('refreshToken', loggedInUser.refreshToken,{
+    res.cookie('refreshToken', loggedInUser.refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
@@ -54,7 +54,7 @@ const logout = async (req, res, next) => {
 
 const refreshToken = async (req, res, next) => {
   try {
-    const result = await userService.refreshToken(req.cookie?.refreshToken)
+    const result = await userService.refreshToken(req.cookies?.refreshToken)
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: true,
@@ -66,10 +66,22 @@ const refreshToken = async (req, res, next) => {
     next(new ApiError(StatusCodes.FORBIDDEN, 'Please sign in! (Error from refresh token)'))
   }
 }
+
+const update = async (req, res, next) => {
+  try {
+    const userId = req.jwtDecoded._id
+    const userAvatarFile = req.file
+    const updatedUser = await userService.update(userId, req.body, userAvatarFile)
+    res.status(StatusCodes.OK).json(updatedUser)
+  } catch (error) {
+    next(error)
+  }
+}
 export const userController = {
   register,
   login,
   verifyAccount,
   logout,
-  refreshToken
+  refreshToken,
+  update
 }

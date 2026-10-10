@@ -6,3 +6,6 @@ export const EMAIL_RULE_MESSAGE = 'Please enter a valid email address'
 export const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,30}$/
 export const PASSWORD_RULE_MESSAGE = 'Password must be at least 8 characters long and contain at least one letter and one number'
 export const PASSWORD_CONFIRM_RULE_MESSAGE = 'Passwords do not match'
+
+export const LIMIT_COMMON_FILE_SIZE = 10485760 //10mb
+export const ALLOW_COMMON_TYPE = ['image/jpg', 'image/png', 'image/jpeg']
