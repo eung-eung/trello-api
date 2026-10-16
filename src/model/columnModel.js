@@ -88,9 +88,8 @@ const update = async (columnId, updatedData) => {
       if (cardOrderIdsFromClient.length !== new Set(cardOrderIdsFromClient).size) {
         throw new Error('Duplicate card id in request!')
       }
+      updatedData.cardOrderIds = updatedData.cardOrderIds.map(id => new ObjectId(String(id)))
     }
-
-    updatedData.cardOrderIds = updatedData.cardOrderIds.map(id => new ObjectId(String(id)))
 
     const result = await GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
       { _id: new ObjectId(String(columnId)) },
