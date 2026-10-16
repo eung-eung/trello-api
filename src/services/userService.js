@@ -159,7 +159,7 @@ const update = async (userId, reqBody, userAvatarFile) => {
       password: hashedNewPassword
     })
   } else if (userAvatarFile) {
-    const uploadResult = await CloudinaryProvider.streamUpload(userAvatarFile.buffer, `users/${existUser._id}/images/avatar`, { overwrite: true})
+    const uploadResult = await CloudinaryProvider.streamUpload(userAvatarFile.buffer, `users/${existUser._id}/images/avatar`, { overwrite: true })
     console.log('service > update > upload result: ', uploadResult)
 
     //lưu url của file ảnh vào db

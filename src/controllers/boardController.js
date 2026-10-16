@@ -1,10 +1,21 @@
 import { StatusCodes } from 'http-status-codes'
-import { cloneDeep } from 'lodash'
 import { boardService } from '~/services/boardService'
+
+const getBoardList = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const userId = req.jwtDecoded._id //  userId trong authMiddleware
+    const boardList = await boardService.getBoardList({ page, limit, userId })
+    // throw new Error('Test error handling') // Test error handling
+    res.status(StatusCodes.OK).json(boardList)
+  } catch (error) { next(error) }
+}
 
 const createNew = async (req, res, next) => {
   try {
-    const createdBoard = await boardService.createNew(req.body)
+    console.log('boardController createNew', req.body, req.jwtDecoded._id)
+    const createdBoard = await boardService.createNew(req.body, req.jwtDecoded._id) //  userId trong authMiddleware
 
     res.status(StatusCodes.CREATED).json(createdBoard)
 
@@ -49,5 +60,6 @@ export const boardController = {
   createNew,
   getDetails,
   update,
-  moveCardToDifferentColumn
+  moveCardToDifferentColumn,
+  getBoardList
 }

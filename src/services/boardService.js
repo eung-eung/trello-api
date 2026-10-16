@@ -6,13 +6,13 @@ import { StatusCodes } from 'http-status-codes'
 import { cardModel } from '~/model/cardModel'
 import { columnModel } from '~/model/columnModel'
 
-const createNew = async (reqBody) => {
+const createNew = async (reqBody, userId) => {
   const createdBoard = {
     ...reqBody,
-    slug: formatFromStringtoSlug(reqBody.title)
+    slug: formatFromStringtoSlug(reqBody.title),
   }
 
-  const result = await boardModel.createNew(createdBoard)
+  const result = await boardModel.createNew(createdBoard, userId)
   const newBoard = await boardModel.findOneById(result.insertedId.toString())
 
   return newBoard
@@ -65,9 +65,15 @@ const moveCardToDifferentColumn = async (reqBody) => {
 
 }
 
+const getBoardList = async ({ page, limit, userId }) => {
+  const boardList = await boardModel.getBoardList({ page, limit, userId })
+  return boardList
+}
+
 export const boardService = {
   createNew,
   getDetails,
   update,
-  moveCardToDifferentColumn
+  moveCardToDifferentColumn,
+  getBoardList
 }

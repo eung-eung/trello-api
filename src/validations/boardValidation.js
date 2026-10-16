@@ -71,8 +71,21 @@ const moveCardToDifferentColumn = async (req, res, next) => {
   }
 }
 
+const boardList = async (req, res, next) => {
+  try {
+    const correctCondition = Joi.object({
+      page: Joi.number().integer().min(1).default(1),
+      limit: Joi.number().integer().min(1).max(100).default(10)
+    })
+    await correctCondition.validateAsync(req.query, { abortEarly: false })
+    next()
+  } catch (error) {
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+  }}
+
 export const boardValidation = {
   createNew,
   update,
-  moveCardToDifferentColumn
+  moveCardToDifferentColumn,
+  boardList
 }

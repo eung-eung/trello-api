@@ -17,7 +17,12 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   columnOrderIds: Joi.array().items(
     Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
   ).default([]),
-
+  ownerIds: Joi.array().items(
+    Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+  ).required(),
+  memberIds: Joi.array().items(
+    Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+  ).default([]),
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
   _destroy: Joi.boolean().default(false)
@@ -26,14 +31,18 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
 //chỉ định ra những fields mà mình không muốn cập nhật
 const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 
-const validateBeforeCreate = async (data) => {
-  return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly:false })
+const validateBeforeCreate = async (data, userId) => {
+  const _data = { ...data, ownerIds: [userId] }
+  return await BOARD_COLLECTION_SCHEMA.validateAsync(_data, { abortEarly:false })
 }
 
-const createNew = async (data) => {
+const createNew = async (data, userId) => {
   try {
-    const validData = await validateBeforeCreate(data)
-    const createdBoard = await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(validData)
+    const validData = await validateBeforeCreate(data, userId)
+    const boardToCreate = { ...validData, ownerIds: validData.ownerIds.map(
+      (id) => new ObjectId(String(id))
+    ) }
+    const createdBoard = await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(boardToCreate)
     return createdBoard
   } catch (error) { throw new Error(error) }
 }
@@ -178,6 +187,60 @@ const removeColumnIdFromColumnOrderIds = async (boardId, columnId) => {
   }
 }
 
+const getBoardList = async ({ page, limit, userId }) => {
+  try {
+    const boardCollection = GET_DB().collection(BOARD_COLLECTION_NAME)
+    const queryCondition = [
+      //điều kiện 1: board chưa bị xoá
+      { _destroy: false },
+      //điều kiện 2: userId phải thuộc 1 trong 2 mảng onwerIds hoặc memberIds
+      { $or: [
+        { ownerIds: new ObjectId(String(userId)) },
+        { memberIds: new ObjectId(String(userId)) }
+      ] }
+    ]
+    const totalBoardsResult = await boardCollection.aggregate([
+      { $match: { $and: queryCondition } },
+      { $count: 'countedAllBoards' }
+    ]).toArray()
+    const totalBoards = totalBoardsResult[0]?.countedAllBoards || 0
+    const totalPages = Math.ceil(totalBoards / limit)
+
+    //chuẩn hoá page
+    page = Math.max(1, Math.min(page, totalPages || 1)) //nếu totalPages = 0 => page = 1
+
+    const query = await boardCollection.aggregate([
+      { $match: { $and: queryCondition } },
+      { $sort: { createdAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    ]).toArray()
+
+    // const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
+    //   { $match: { $and: queryCondition } },
+    //   { $sort: { createdAt: -1 } },
+    //   //xử lí nhiều luồng trong 1 query
+    //   { $facet: {
+    //     //luồng 1:  query boards
+    //     'queryboards': [
+    //       { $skip: (page - 1) * limit },
+    //       { $limit: limit }
+    //     ],
+    //     //luồng 2: query tổng số lượng boards
+    //     'queryTotalBoards': [{ $count: 'countedAllBoards' }]
+    //   } }
+    // ]).toArray()
+
+    return {
+      boardList: query || [],
+      totalBoards,
+      page
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
@@ -186,5 +249,6 @@ export const boardModel = {
   getDetails,
   pushToColumnOrderIds,
   update,
-  removeColumnIdFromColumnOrderIds
+  removeColumnIdFromColumnOrderIds,
+  getBoardList
 }
